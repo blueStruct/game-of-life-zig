@@ -15,49 +15,49 @@ const RelativeCoords = struct {
 
 pub fn main() anyerror!void {
     // initialization
-    const cellSizePixels = 4;
-    const cellCountHorizontal = 360;
-    const cellCountVertical = 240;
-    const screenWidth = cellSizePixels * cellCountHorizontal;
-    const screenHeight = cellSizePixels * cellCountVertical;
-    const cellCount = cellCountVertical * cellCountHorizontal;
-    var cellBuffer1: [cellCount]bool = undefined; // double buffer pattern
-    var cellBuffer2: [cellCount]bool = undefined;
-    var readBuffer: [*]bool = &cellBuffer1;
-    var writeBuffer: [*]bool = &cellBuffer2;
+    const cell_size_pixels = 4;
+    const cell_count_horizontal = 360;
+    const cell_count_vertical = 240;
+    const screen_width = cell_size_pixels * cell_count_horizontal;
+    const screen_height = cell_size_pixels * cell_count_vertical;
+    const cell_count = cell_count_vertical * cell_count_horizontal;
+    var cell_buffer1: [cell_count]bool = undefined; // double buffer pattern
+    var cell_buffer2: [cell_count]bool = undefined;
+    var read_buffer: [*]bool = &cell_buffer1;
+    var write_buffer: [*]bool = &cell_buffer2;
 
     var seed: u64 = undefined;
     try std.posix.getrandom(std.mem.asBytes(&seed));
     var prng = std.rand.DefaultPrng.init(seed);
     var rand = prng.random();
 
-    for (readBuffer[0..cellBuffer1.len]) |*cell| {
+    for (read_buffer[0..cell_buffer1.len]) |*cell| {
         cell.* = rand.boolean();
     }
 
-    rl.initWindow(screenWidth, screenHeight, "conway's game of life with raylib-zig");
+    rl.initWindow(screen_width, screen_height, "conway's game of life with raylib-zig");
     defer rl.closeWindow();
     rl.setTargetFPS(10);
 
     // main game loop
     while (!rl.windowShouldClose()) { // detect window close button or ESC key
         // update
-        for (0.., writeBuffer[0..cellBuffer1.len]) |i, *cell| {
+        for (0.., write_buffer[0..cell_buffer1.len]) |i, *cell| {
             // count live neighbors
-            const cellAlive = readBuffer[i];
-            var countLiveNeighbors: u32 = 0;
-            for (getNeighborIndices(i, cellCountHorizontal, cellCountVertical)) |neighborIndex| {
-                if (readBuffer[neighborIndex]) {
-                    countLiveNeighbors += 1;
+            const cell_alive = read_buffer[i];
+            var count_live_neighbors: u32 = 0;
+            for (getNeighborIndices(i, cell_count_horizontal, cell_count_vertical)) |neighborIndex| {
+                if (read_buffer[neighborIndex]) {
+                    count_live_neighbors += 1;
                 }
             }
 
             // apply rules
-            if (cellAlive and (countLiveNeighbors < 2 or countLiveNeighbors > 3)) { // rule 1,3
+            if (cell_alive and (count_live_neighbors < 2 or count_live_neighbors > 3)) { // rule 1,3
                 cell.* = false;
-            } else if (cellAlive) { // rule 2
+            } else if (cell_alive) { // rule 2
                 cell.* = true;
-            } else if (!cellAlive and countLiveNeighbors == 3) { // rule 4
+            } else if (!cell_alive and count_live_neighbors == 3) { // rule 4
                 cell.* = true;
             } else { // special rule because of double buffer pattern
                 cell.* = false;
@@ -70,15 +70,15 @@ pub fn main() anyerror!void {
 
         rl.clearBackground(rl.Color.black);
 
-        for (0.., readBuffer[0..cellBuffer1.len]) |i, *cell| {
+        for (0.., read_buffer[0..cell_buffer1.len]) |i, *cell| {
             if (cell.* == true) {
-                const coords = getXandY(i, cellCountHorizontal);
-                rl.drawRectangle(coords.x * cellSizePixels, coords.y * cellSizePixels, cellSizePixels, cellSizePixels, rl.Color.white);
+                const coords = getXandY(i, cell_count_horizontal);
+                rl.drawRectangle(coords.x * cell_size_pixels, coords.y * cell_size_pixels, cell_size_pixels, cell_size_pixels, rl.Color.white);
             }
         }
 
         // swap buffers
-        std.mem.swap([*]bool, &readBuffer, &writeBuffer);
+        std.mem.swap([*]bool, &read_buffer, &write_buffer);
     }
 }
 
@@ -97,23 +97,23 @@ fn wrap(coords: Coords, diff: RelativeCoords, width: comptime_int, height: compt
 }
 
 fn getNeighborIndices(index: usize, width: comptime_int, height: comptime_int) [8]usize {
-    var neighborsRelativeCoords: [8]RelativeCoords = undefined;
-    neighborsRelativeCoords[0] = .{ .x = -1, .y = -1 };
-    neighborsRelativeCoords[1] = .{ .x = 0, .y = -1 };
-    neighborsRelativeCoords[2] = .{ .x = 1, .y = -1 };
-    neighborsRelativeCoords[3] = .{ .x = -1, .y = 0 };
-    neighborsRelativeCoords[4] = .{ .x = 1, .y = 0 };
-    neighborsRelativeCoords[5] = .{ .x = -1, .y = 1 };
-    neighborsRelativeCoords[6] = .{ .x = 0, .y = 1 };
-    neighborsRelativeCoords[7] = .{ .x = 1, .y = 1 };
+    var neighbors_relative_coords: [8]RelativeCoords = undefined;
+    neighbors_relative_coords[0] = .{ .x = -1, .y = -1 };
+    neighbors_relative_coords[1] = .{ .x = 0, .y = -1 };
+    neighbors_relative_coords[2] = .{ .x = 1, .y = -1 };
+    neighbors_relative_coords[3] = .{ .x = -1, .y = 0 };
+    neighbors_relative_coords[4] = .{ .x = 1, .y = 0 };
+    neighbors_relative_coords[5] = .{ .x = -1, .y = 1 };
+    neighbors_relative_coords[6] = .{ .x = 0, .y = 1 };
+    neighbors_relative_coords[7] = .{ .x = 1, .y = 1 };
 
-    const cellCoords = getXandY(index, width);
-    var neighborsIndices: [8]usize = undefined;
+    const cell_coords = getXandY(index, width);
+    var neighbors_indices: [8]usize = undefined;
 
-    for (0.., neighborsRelativeCoords) |i, nCoords| {
-        const wrappedCoords = wrap(cellCoords, nCoords, width, height);
-        neighborsIndices[i] = getArrayIndex(wrappedCoords, width);
+    for (0.., neighbors_relative_coords) |i, n_coords| {
+        const wrapped_coords = wrap(cell_coords, n_coords, width, height);
+        neighbors_indices[i] = getArrayIndex(wrapped_coords, width);
     }
 
-    return neighborsIndices;
+    return neighbors_indices;
 }
