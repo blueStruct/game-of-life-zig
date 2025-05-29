@@ -53,13 +53,11 @@ pub fn main() anyerror!void {
             }
 
             // apply rules
-            if (cell_alive and (count_live_neighbors < 2 or count_live_neighbors > 3)) { // rule 1,3
-                cell.* = false;
-            } else if (cell_alive) { // rule 2
+            if (count_live_neighbors == 3) {
                 cell.* = true;
-            } else if (!cell_alive and count_live_neighbors == 3) { // rule 4
+            } else if (cell_alive and count_live_neighbors == 2) {
                 cell.* = true;
-            } else { // special rule because of double buffer pattern
+            } else {
                 cell.* = false;
             }
         }
